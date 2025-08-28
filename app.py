@@ -320,7 +320,7 @@ def main():
         # Pedimos las horas trabajadas a la semana
         horas_semana = st.number_input(
             "Horas trabajadas por semana", 
-            min_value=1, max_value=100, value=48, step=1
+            min_value=1, max_value=100, value=44, step=1
         )
 
         # Convertimos a horas al mes (4.33 semanas promedio)
