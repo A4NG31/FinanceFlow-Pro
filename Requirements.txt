@@ -2,8 +2,5 @@ streamlit
 pandas
 plotly
 numpy
-
-# Development dependencies (optional)
-# pytest==7.4.3
-# black==23.12.1
-# flake8==6.1.0
+math
+datetime
