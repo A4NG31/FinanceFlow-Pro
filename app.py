@@ -327,7 +327,7 @@ def main():
         horas_mes = horas_semana * 4.33  
 
         # Evitamos división por cero
-        i    f horas_mes > 0:
+        if horas_mes > 0:
         valor_hora = ingreso_mensual / horas_mes
         st.sidebar.metric("💸 Valor por hora", f"${valor_hora:,.2f}")
 
