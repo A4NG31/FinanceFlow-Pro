@@ -260,7 +260,8 @@ def main():
     # Header principal
     st.markdown("""
     <div class="main-header">
-        <h1>💰 Planificador Financiero Inteligente</h1>
+        <h1>💰FinanceFlow-Pro</h1>
+        <h2>Planificador Financiero Inteligente</h1>
         <p>Basado en el Modelo 50-30-20 | Análisis de Riesgo Personalizado</p>
     </div>
     """, unsafe_allow_html=True)
