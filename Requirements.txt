@@ -2,9 +2,6 @@ streamlit
 pandas
 plotly
 numpy
-python-dateutil
-openpyxl
-Pillow
 
 # Development dependencies (optional)
 # pytest==7.4.3
