@@ -314,6 +314,24 @@ def main():
                 value=planner.family_info.get('num_pets', 1)
             )
 
+        # === Cálculo del valor hora de trabajo ===
+        st.sidebar.header("Valor de tu hora de trabajo")
+
+        # Pedimos las horas trabajadas a la semana
+        horas_semana = st.sidebar.number_input(
+        "Horas trabajadas por semana", 
+        min_value=1, max_value=100, value=48, step=1
+        )
+
+        # Convertimos a horas al mes (4.33 semanas promedio)
+        horas_mes = horas_semana * 4.33  
+
+        # Evitamos división por cero
+        i    f horas_mes > 0:
+        valor_hora = ingreso_mensual / horas_mes
+        st.sidebar.metric("💸 Valor por hora", f"${valor_hora:,.2f}")
+
+
         # Información Adicional
         st.sidebar.markdown("*Created by Angel Torres*")
 
