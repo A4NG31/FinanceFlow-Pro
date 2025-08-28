@@ -332,8 +332,8 @@ if horas_mes > 0:
     st.sidebar.metric("💸 Valor por hora", f"${valor_hora:,.2f}")
 
 
-        # Información Adicional
-        st.sidebar.markdown("*Created by Angel Torres*")
+# Información Adicional
+st.sidebar.markdown("*Created by Angel Torres*")
 
     
     
