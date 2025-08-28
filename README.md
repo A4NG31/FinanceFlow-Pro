@@ -35,18 +35,21 @@ Una aplicación web profesional desarrollada con Streamlit que implementa el mod
 
 👉 [**Ver Aplicación en Streamlit Cloud**]([https://financeflow-pro-angeltorres.streamlit.app/])
 
+https://financeflow-pro-angeltorres.streamlit.app/
+
+
 ## 📱 Screenshots
 
-![Dashboard Principal]
-(<img width="1922" height="865" alt="image" src="https://github.com/user-attachments/assets/98dfee2c-6af5-4108-8864-3fe9d92c2ebb" />)
+Dashboard Principal
+<img width="1922" height="865" alt="image" src="https://github.com/user-attachments/assets/98dfee2c-6af5-4108-8864-3fe9d92c2ebb" />
 *Panel principal con análisis del modelo 50-30-20*
 
-![Planificador de Compras]
-(<img width="1903" height="736" alt="image" src="https://github.com/user-attachments/assets/88f8afbd-1837-4f8c-afd9-4138681e8488" />)
+Planificador de Compras
+(<img width="1903" height="736" alt="image" src="https://github.com/user-attachments/assets/88f8afbd-1837-4f8c-afd9-4138681e8488" />
 *Calculadora inteligente de metas de ahorro*
 
-![Análisis de Inversiones]
-(<img width="1580" height="759" alt="image" src="https://github.com/user-attachments/assets/fc8e2808-9157-483b-95e8-c0797f133d8f" />)
+Análisis de Inversiones
+<img width="1580" height="759" alt="image" src="https://github.com/user-attachments/assets/fc8e2808-9157-483b-95e8-c0797f133d8f" />
 *Recomendaciones personalizadas de inversión*
 
 ## 🛠️ Tecnologías Utilizadas
