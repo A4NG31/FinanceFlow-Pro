@@ -6,6 +6,7 @@ from plotly.subplots import make_subplots
 import numpy as np
 from datetime import datetime, timedelta
 import math
+import calendar
 
 # Configuración de la página
 st.set_page_config(
@@ -313,27 +314,42 @@ def main():
                 max_value=5,
                 value=planner.family_info.get('num_pets', 1)
             )
-                   
-        # === Cálculo del valor hora de trabajo ===
-        st.header("Valor de tu hora de trabajo")
 
+
+        # === Cálculo del valor hora de trabajo con mes actual ===
+        st.header("Valor de tu hora de trabajo")
+        
         # Pedimos las horas trabajadas a la semana
         horas_semana = st.number_input(
             "Horas trabajadas por semana", 
-            min_value=1, max_value=100, value=44, step=1
+            min_value=1, max_value=100, value=48, step=1
         )
-
-        # Convertimos a horas al mes (4.33 semanas promedio)
-        horas_mes = horas_semana * 4.33  
-
+        
+        # Obtenemos mes y año actual
+        hoy = datetime.today()
+        mes_actual = hoy.month
+        anio_actual = hoy.year
+        nombre_mes = calendar.month_name[mes_actual]  # Ej: "August"
+        
+        # Número de días del mes actual
+        dias_mes = calendar.monthrange(anio_actual, mes_actual)[1]
+        
+        # Semanas reales del mes
+        semanas_mes = dias_mes / 7  
+        
+        # Horas trabajadas al mes según semanas reales
+        horas_mes = horas_semana * semanas_mes
+        
         # Evitamos división por cero
         if horas_mes > 0 and planner.income > 0:
             valor_hora = planner.income / horas_mes
-            st.metric("💸 Valor por hora", f"${valor_hora:,.2f}")
-
+            st.metric(
+                f"💸 Valor por hora ({nombre_mes} {anio_actual})", 
+                f"${valor_hora:,.2f}"
+            )
+        
         # Información Adicional
         st.markdown("*Created by Angel Torres*")
-
 
     
     
