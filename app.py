@@ -531,7 +531,7 @@ def main():
                 emergency_fund = st.number_input(
                     "Fondo de emergencia mensual", 
                     min_value=0, 
-                    value=budgets['savings_budget'] * 0.6,
+                    value=int(budgets['savings_budget'] * 0.6),
                     step=25000,
                     help="Recomendado: 60% de este presupuesto"
                 )
@@ -546,7 +546,7 @@ def main():
                 investment_amount = st.number_input(
                     "Monto mensual para inversiones", 
                     min_value=0, 
-                    value=budgets['savings_budget'] * 0.4,
+                  value=int(budgets['savings_budget'] * 0.4),
                     step=25000,
                     help="Recomendado: 40% de este presupuesto"
                 )
