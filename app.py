@@ -260,7 +260,8 @@ def main():
     # Header principal
     st.markdown("""
     <div class="main-header">
-        <h1>💰 Planificador Financiero Inteligente</h1>
+        <h1>💰FinanceFlow-Pro</h1>
+        <h2>Planificador Financiero Inteligente</h1>
         <p>Basado en el Modelo 50-30-20 | Análisis de Riesgo Personalizado</p>
     </div>
     """, unsafe_allow_html=True)
@@ -312,6 +313,11 @@ def main():
                 max_value=5,
                 value=planner.family_info.get('num_pets', 1)
             )
+
+        # Información Adicional
+        st.sidebar.markdown("*Created by Angel Torres*")
+
+    
     
     # Tabs principales
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -531,7 +537,7 @@ def main():
                 emergency_fund = st.number_input(
                     "Fondo de emergencia mensual", 
                     min_value=0, 
-                    value=budgets['savings_budget'] * 0.6,
+                    value=int(budgets['savings_budget'] * 0.6),
                     step=25000,
                     help="Recomendado: 60% de este presupuesto"
                 )
@@ -546,7 +552,7 @@ def main():
                 investment_amount = st.number_input(
                     "Monto mensual para inversiones", 
                     min_value=0, 
-                    value=budgets['savings_budget'] * 0.4,
+                  value=int(budgets['savings_budget'] * 0.4),
                     step=25000,
                     help="Recomendado: 40% de este presupuesto"
                 )
