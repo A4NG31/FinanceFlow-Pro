@@ -313,7 +313,10 @@ def main():
                 value=planner.family_info.get('num_pets', 1)
             )
 
-     st.sidebar.markdown("*Created by Angel Torres*")
+        # Información Adicional
+        st.sidebar.markdown("*Created by Angel Torres*")
+
+    
     
     # Tabs principales
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
