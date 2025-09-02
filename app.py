@@ -836,10 +836,48 @@ def main():
                     value=50,
                     step=5
                 ) / 100
+
             
-            if item_name and item_price > 0 and available_wants > 0:
-                monthly_save = available_wants * save_percentage
-                months_needed = math.ceil(item_price / monthly_save) if monthly_save > 0 else float('inf')
+            # CÁLCULOS CORREGIDOS
+            if item_name and item_price > 0:
+                # 1. Calcular el límite máximo de ahorro mensual basado en el porcentaje
+                save_percentage_decimal = save_percentage / 100
+                max_monthly_save = budgets['wants_budget'] * save_percentage_decimal
+                
+                # 2. Calcular cuántos meses se necesitan con ese límite
+                if max_monthly_save > 0:
+                    months_needed = math.ceil(item_price / max_monthly_save)
+                    # 3. Calcular la cuota mensual exacta para completar en esos meses exactos
+                    monthly_save = item_price / months_needed
+                else:
+                    months_needed = float('inf')
+                    monthly_save = 0
+                
+                # Validar si el ahorro mensual es factible
+                if max_monthly_save > budgets['wants_budget']:
+                    st.error("❌ El porcentaje seleccionado excede el 100% del presupuesto de deseos.")
+                elif monthly_save > available_wants and available_wants > 0:
+                    excess_needed = monthly_save - available_wants
+                    st.warning(f"⚠️ Necesitará reducir ${excess_needed:,.0f} COP de otros gastos de deseos para lograr este ahorro.")
+                elif available_wants <= 0:
+                    st.error("❌ No tiene presupuesto disponible. Debe reducir primero sus gastos actuales de deseos.")
+                
+                # Información de la compra
+                st.subheader(f"📊 Plan de Ahorro: {item_name}")
+                
+                # Debug de cálculos
+                if st.checkbox("🔍 Ver cálculos detallados"):
+                    st.markdown(f"""
+                    <div style="background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-family: monospace; font-size: 0.9em;">
+                        <strong>Cálculos Paso a Paso:</strong><br>
+                        1. Presupuesto total deseos: ${budgets['wants_budget']:,.0f} COP<br>
+                        2. Porcentaje para esta compra: {save_percentage}%<br>
+                        3. Límite máximo mensual = ${budgets['wants_budget']:,.0f} × {save_percentage}% = ${max_monthly_save:,.0f} COP<br>
+                        4. Meses necesarios = CEIL(${item_price:,.0f} ÷ ${max_monthly_save:,.0f}) = {months_needed} meses<br>
+                        5. Cuota mensual exacta = ${item_price:,.0f} ÷ {months_needed} = ${monthly_save:,.0f} COP<br>
+                        6. Presupuesto disponible actual: ${available_wants:,.0f} COP
+                    </div>
+                    """, unsafe_allow_html=True)
                 
                 # Información de la compra
                 st.subheader(f"📊 Plan de Ahorro: {item_name}")
