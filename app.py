@@ -836,10 +836,24 @@ def main():
                     value=50,
                     step=5
                 ) / 100
-            
+
             if item_name and item_price > 0 and available_wants > 0:
-                monthly_save = available_wants * save_percentage
-                months_needed = math.ceil(item_price / monthly_save) if monthly_save > 0 else float('inf')
+                # NUEVA LÓGICA CORREGIDA:
+                
+                # 1. Calcular el monto máximo mensual disponible
+                max_monthly_save = available_wants * save_percentage
+                
+                # 2. Calcular meses necesarios (redondeado hacia arriba)
+                months_needed = math.ceil(item_price / max_monthly_save) if max_monthly_save > 0 else float('inf')
+                
+                # 3. Calcular la cuota mensual exacta para obtener meses enteros
+                monthly_save = item_price / months_needed if months_needed < float('inf') else 0
+                
+                # Verificar que la cuota calculada no exceda el presupuesto disponible
+                if monthly_save > available_wants:
+                    # Si excede, recalcular con el máximo disponible
+                    monthly_save = available_wants
+                    months_needed = math.ceil(item_price / monthly_save)
                 
                 # Información de la compra
                 st.subheader(f"📊 Plan de Ahorro: {item_name}")
@@ -858,6 +872,16 @@ def main():
                 with col_d:
                     target_date = datetime.now() + timedelta(days=30 * months_needed)
                     st.metric("🎯 Fecha Objetivo", target_date.strftime("%m/%Y"))
+                
+                # Mostrar validación del cálculo
+                total_saved = monthly_save * months_needed
+                st.info(f"✅ Validación: ${monthly_save:,.0f} × {months_needed} meses = ${total_saved:,.0f} COP")
+                
+                if total_saved < item_price:
+                    difference = item_price - total_saved
+                    st.warning(f"⚠️ Faltarían ${difference:,.0f} COP. Agregando 1 mes adicional.")
+                    months_needed += 1
+                    monthly_save = item_price / months_needed
                 
                 # Gráfico de progreso de ahorro
                 if months_needed <= 60:  # Solo mostrar si es razonable
