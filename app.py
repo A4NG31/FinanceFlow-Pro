@@ -799,15 +799,30 @@ def main():
                 """, unsafe_allow_html=True)
         else:
             st.warning("⚠️ Complete la información de ingresos y gastos para ver el análisis completo.")
-    
-    with tab5:
+ with tab5:
         st.header("📈 Planificador de Compras Importantes")
         
         if planner.income > 0:
             budgets = planner.calculate_percentages()
-            available_wants = budgets['wants_budget'] - planner.calculate_wants_total()
+            total_wants_spent = planner.calculate_wants_total()
+            available_wants = budgets['wants_budget'] - total_wants_spent
             
-            st.info(f"💡 **Presupuesto disponible mensual para compras:** ${max(0, available_wants):,.0f} COP")
+            # Debug info (opcional - mostrar solo si hay problemas)
+            if st.checkbox("🔍 Mostrar información de debug"):
+                st.markdown(f"""
+                <div style="background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-family: monospace; font-size: 0.9em;">
+                    <strong>Debug - Cálculos de Presupuesto:</strong><br>
+                    • Salario mensual: ${planner.income:,.0f} COP<br>
+                    • Presupuesto total deseos (30%): ${budgets['wants_budget']:,.0f} COP<br>
+                    • Gastos actuales de deseos: ${total_wants_spent:,.0f} COP<br>
+                    • Disponible para compras: ${available_wants:,.0f} COP
+                </div>
+                """, unsafe_allow_html=True)
+            
+            if available_wants > 0:
+                st.info(f"💡 **Presupuesto disponible mensual para compras:** ${available_wants:,.0f} COP")
+            else:
+                st.error(f"❌ **Sin presupuesto disponible.** Exceso en deseos: ${abs(available_wants):,.0f} COP")
             
             # Formulario para nueva compra
             st.subheader("🛍️ Nueva Compra Planificada")
@@ -835,26 +850,22 @@ def main():
                     max_value=100,
                     value=50,
                     step=5
-                ) / 100
-
+                )
             
             # CÁLCULOS CORREGIDOS
             if item_name and item_price > 0:
-                # 1. Calcular el límite máximo de ahorro mensual basado en el porcentaje
+                # Calcular el ahorro mensual basado en el presupuesto total de deseos (no solo lo disponible)
                 save_percentage_decimal = save_percentage / 100
-                max_monthly_save = budgets['wants_budget'] * save_percentage_decimal
+                monthly_save = budgets['wants_budget'] * save_percentage_decimal
                 
-                # 2. Calcular cuántos meses se necesitan con ese límite
-                if max_monthly_save > 0:
-                    months_needed = math.ceil(item_price / max_monthly_save)
-                    # 3. Calcular la cuota mensual exacta para completar en esos meses exactos
-                    monthly_save = item_price / months_needed
+                # Calcular meses necesarios
+                if monthly_save > 0:
+                    months_needed = math.ceil(item_price / monthly_save)
                 else:
                     months_needed = float('inf')
-                    monthly_save = 0
                 
                 # Validar si el ahorro mensual es factible
-                if max_monthly_save > budgets['wants_budget']:
+                if monthly_save > budgets['wants_budget']:
                     st.error("❌ El porcentaje seleccionado excede el 100% del presupuesto de deseos.")
                 elif monthly_save > available_wants and available_wants > 0:
                     excess_needed = monthly_save - available_wants
@@ -872,15 +883,11 @@ def main():
                         <strong>Cálculos Paso a Paso:</strong><br>
                         1. Presupuesto total deseos: ${budgets['wants_budget']:,.0f} COP<br>
                         2. Porcentaje para esta compra: {save_percentage}%<br>
-                        3. Límite máximo mensual = ${budgets['wants_budget']:,.0f} × {save_percentage}% = ${max_monthly_save:,.0f} COP<br>
-                        4. Meses necesarios = CEIL(${item_price:,.0f} ÷ ${max_monthly_save:,.0f}) = {months_needed} meses<br>
-                        5. Cuota mensual exacta = ${item_price:,.0f} ÷ {months_needed} = ${monthly_save:,.0f} COP<br>
-                        6. Presupuesto disponible actual: ${available_wants:,.0f} COP
+                        3. Ahorro mensual = ${budgets['wants_budget']:,.0f} × {save_percentage}% = ${monthly_save:,.0f} COP<br>
+                        4. Meses necesarios = ${item_price:,.0f} ÷ ${monthly_save:,.0f} = {months_needed} meses<br>
+                        5. Presupuesto disponible actual: ${available_wants:,.0f} COP
                     </div>
                     """, unsafe_allow_html=True)
-                
-                # Información de la compra
-                st.subheader(f"📊 Plan de Ahorro: {item_name}")
                 
                 col_a, col_b, col_c, col_d = st.columns(4)
                 
@@ -891,19 +898,26 @@ def main():
                     st.metric("💳 Ahorro Mensual", f"${monthly_save:,.0f}")
                 
                 with col_c:
-                    st.metric("📅 Meses Necesarios", f"{months_needed}")
+                    if months_needed == float('inf'):
+                        st.metric("📅 Meses Necesarios", "∞")
+                    else:
+                        st.metric("📅 Meses Necesarios", f"{months_needed}")
                 
                 with col_d:
-                    target_date = datetime.now() + timedelta(days=30 * months_needed)
-                    st.metric("🎯 Fecha Objetivo", target_date.strftime("%m/%Y"))
+                    if months_needed != float('inf'):
+                        target_date = datetime.now() + timedelta(days=30 * months_needed)
+                        st.metric("🎯 Fecha Objetivo", target_date.strftime("%m/%Y"))
+                    else:
+                        st.metric("🎯 Fecha Objetivo", "No alcanzable")
                 
                 # Gráfico de progreso de ahorro
-                if months_needed <= 60:  # Solo mostrar si es razonable
+                if months_needed <= 60 and months_needed != float('inf'):
                     progress_data = []
                     cumulative = 0
                     
                     for month in range(int(months_needed) + 1):
-                        cumulative += monthly_save if month < months_needed else 0
+                        if month > 0:
+                            cumulative += monthly_save
                         progress_data.append({
                             'Mes': month,
                             'Ahorro Acumulado': min(cumulative, item_price),
@@ -936,7 +950,7 @@ def main():
                         st.markdown(f"""
                         <div class="success-card">
                             <h4>🎉 Compra Alcanzable</h4>
-                            <p>Podrá comprar <strong>{item_name}</strong> en {months_needed} meses.</p>
+                            <p>Podrá comprar <strong>{item_name}</strong> en {months_needed} meses ahorrando ${monthly_save:,.0f} COP mensuales.</p>
                             <p><strong>Estrategia:</strong> Mantenga disciplina en el ahorro mensual.</p>
                         </div>
                         """, unsafe_allow_html=True)
@@ -947,9 +961,10 @@ def main():
                             <p>Necesitará {months_needed} meses para comprar <strong>{item_name}</strong>.</p>
                             <p><strong>Sugerencias:</strong></p>
                             <ul>
-                                <li>Considere aumentar el % destinado al ahorro</li>
-                                <li>Busque ofertas o descuentos</li>
-                                <li>Evalúe comprar una versión más económica</li>
+                                <li>Aumentar el % destinado al ahorro (actualmente {save_percentage}%)</li>
+                                <li>Buscar ofertas o descuentos</li>
+                                <li>Evaluar una versión más económica</li>
+                                <li>Reducir otros gastos de deseos para liberar presupuesto</li>
                             </ul>
                         </div>
                         """, unsafe_allow_html=True)
@@ -960,10 +975,11 @@ def main():
                             <p>Necesitará {months_needed} meses para esta compra.</p>
                             <p><strong>Recomendaciones:</strong></p>
                             <ul>
-                                <li>Reconsidere si realmente necesita esta compra</li>
-                                <li>Aumente significativamente sus ingresos</li>
-                                <li>Reduzca otros gastos de deseos</li>
-                                <li>Busque alternativas más económicas</li>
+                                <li>Reconsiderar si realmente necesita esta compra</li>
+                                <li>Aumentar significativamente el porcentaje de ahorro</li>
+                                <li>Reducir drásticamente otros gastos de deseos</li>
+                                <li>Considerar aumentar sus ingresos</li>
+                                <li>Buscar alternativas más económicas</li>
                             </ul>
                         </div>
                         """, unsafe_allow_html=True)
@@ -972,56 +988,71 @@ def main():
                     st.subheader("💳 Comparación: Ahorro vs Financiamiento")
                     
                     # Simulación de crédito (ejemplo con 24% anual)
-                    if months_needed > 3:
-                        monthly_rate = 0.24 / 12  # 24% anual
-                        loan_months = min(months_needed, 36)  # Máximo 36 meses
+                    if months_needed > 3 and months_needed != float('inf'):
+                        monthly_rate = 0.024  # 2.4% mensual (24% anual)
+                        loan_months = min(months_needed, 36)
                         
+                        # Fórmula correcta para cuota de crédito
                         if monthly_rate > 0:
                             monthly_payment = (item_price * monthly_rate * (1 + monthly_rate)**loan_months) / ((1 + monthly_rate)**loan_months - 1)
-                            total_interest = (monthly_payment * loan_months) - item_price
+                            total_credit_cost = monthly_payment * loan_months
+                            total_interest = total_credit_cost - item_price
                         else:
                             monthly_payment = item_price / loan_months
+                            total_credit_cost = item_price
                             total_interest = 0
                         
                         col_credit1, col_credit2 = st.columns(2)
                         
                         with col_credit1:
-                            st.markdown("### 💰 Ahorrando")
-                            st.write(f"**Cuota mensual:** ${monthly_save:,.0f}")
-                            st.write(f"**Total pagado:** ${item_price:,.0f}")
-                            st.write(f"**Intereses:** $0")
-                            st.write(f"**Tiempo:** {months_needed} meses")
+                            st.markdown("### 💰 Opción: Ahorrar")
+                            st.write(f"**Ahorro mensual:** ${monthly_save:,.0f}")
+                            st.write(f"**Total invertido:** ${item_price:,.0f}")
+                            st.write(f"**Intereses pagados:** $0")
+                            st.write(f"**Tiempo total:** {months_needed} meses")
                         
                         with col_credit2:
-                            st.markdown("### 💳 Financiando (24% anual)")
+                            st.markdown("### 💳 Opción: Financiar (24% anual)")
                             st.write(f"**Cuota mensual:** ${monthly_payment:,.0f}")
-                            st.write(f"**Total pagado:** ${monthly_payment * loan_months:,.0f}")
-                            st.write(f"**Intereses:** ${total_interest:,.0f}")
-                            st.write(f"**Tiempo:** {loan_months} meses")
+                            st.write(f"**Total a pagar:** ${total_credit_cost:,.0f}")
+                            st.write(f"**Intereses totales:** ${total_interest:,.0f}")
+                            st.write(f"**Tiempo de pago:** {loan_months} meses")
+                            st.write(f"**Disponible inmediatamente:** ✅")
                         
+                        # Análisis de viabilidad financiera
                         if monthly_payment <= available_wants:
-                            savings_vs_credit = total_interest
-                            st.success(f"💡 **Ahorrando en lugar de financiar, evitará pagar ${savings_vs_credit:,.0f} en intereses.**")
+                            st.success(f"💡 **Financiamiento viable:** La cuota cabe en su presupuesto disponible.")
+                            st.info(f"🧮 **Diferencia:** Ahorrando evita pagar ${total_interest:,.0f} en intereses, pero financiando obtiene el producto {months_needed - loan_months} meses antes.")
                         else:
-                            st.error(f"⚠️ **La cuota del crédito (${monthly_payment:,.0f}) excede su presupuesto disponible.**")
+                            needed_reduction = monthly_payment - available_wants
+                            st.error(f"⚠️ **Financiamiento no viable:** Necesita reducir ${needed_reduction:,.0f} COP de otros gastos de deseos para pagar la cuota.")
                 
+                elif months_needed == float('inf'):
+                    st.markdown(f"""
+                    <div class="danger-card">
+                        <h4>🚨 COMPRA NO VIABLE</h4>
+                        <p>Con el presupuesto actual no es posible ahorrar para esta compra.</p>
+                        <p><strong>Acciones necesarias:</strong></p>
+                        <ul>
+                            <li>Reducir drásticamente otros gastos de deseos</li>
+                            <li>Aumentar sus ingresos</li>
+                            <li>Reconsiderar la necesidad de esta compra</li>
+                        </ul>
+                    </div>
+                    """, unsafe_allow_html=True)
                 else:
-                    st.warning(f"⏰ El tiempo necesario ({months_needed} meses) es muy largo. Considere reducir el precio objetivo o aumentar el ahorro mensual.")
+                    st.warning(f"⏰ El tiempo necesario ({months_needed} meses) es muy largo. Considere las alternativas sugeridas.")
             
-            elif available_wants <= 0:
-                st.error("❌ No tiene presupuesto disponible para nuevas compras. Primero optimice sus gastos actuales de deseos.")
-            
-            # Historial de compras planificadas (simulado)
-            st.subheader("📋 Mis Compras Planificadas")
-            
-            # Esto sería idealmente guardado en una base de datos
-            sample_purchases = [
-                {"Producto": "Laptop Gaming", "Precio": 3500000, "Ahorro Mensual": 350000, "Meses Restantes": 7, "Progreso": 30},
-                {"Producto": "Viaje a Europa", "Precio": 8000000, "Ahorro Mensual": 400000, "Meses Restantes": 15, "Progreso": 25},
-                {"Producto": "iPhone 15", "Precio": 4500000, "Ahorro Mensual": 450000, "Meses Restantes": 2, "Progreso": 80}
-            ]
+            # Historial de compras planificadas (ejemplo)
+            st.subheader("📋 Ejemplo: Compras Planificadas")
             
             if st.checkbox("Ver ejemplo de compras planificadas"):
+                sample_purchases = [
+                    {"Producto": "Laptop Gaming", "Precio": 3500000, "Ahorro Mensual": 350000, "Meses Restantes": 7, "Progreso": 30},
+                    {"Producto": "Viaje a Europa", "Precio": 8000000, "Ahorro Mensual": 400000, "Meses Restantes": 15, "Progreso": 25},
+                    {"Producto": "iPhone 15", "Precio": 4500000, "Ahorro Mensual": 450000, "Meses Restantes": 2, "Progreso": 80}
+                ]
+                
                 df_purchases = pd.DataFrame(sample_purchases)
                 
                 for idx, purchase in df_purchases.iterrows():
@@ -1042,7 +1073,7 @@ def main():
                         st.write(f"Progreso: {purchase['Progreso']}%")
         else:
             st.warning("⚠️ Complete la información de ingresos para usar el planificador de compras.")
-    
+            
     # Footer con información adicional
     st.markdown("---")
     st.markdown("""
