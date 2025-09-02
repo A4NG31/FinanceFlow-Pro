@@ -978,7 +978,7 @@ def main():
         # Estadísticas generales
         st.subheader("📈 Estadísticas Generales")
         
-        if planner.expense_tracker.daily_expenses:
+        if hasattr(planner.expense_tracker, 'daily_expenses') and planner.expense_tracker.daily_expenses:
             total_expenses = sum(e['amount'] for e in planner.expense_tracker.daily_expenses)
             total_transactions = len(planner.expense_tracker.daily_expenses)
             avg_transaction = total_expenses / total_transactions if total_transactions > 0 else 0
