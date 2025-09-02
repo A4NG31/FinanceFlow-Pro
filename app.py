@@ -799,8 +799,7 @@ def main():
                 """, unsafe_allow_html=True)
         else:
             st.warning("⚠️ Complete la información de ingresos y gastos para ver el análisis completo.")
-    
-with tab5:
+ with tab5:
         st.header("📈 Planificador de Compras Importantes")
         
         if planner.income > 0:
@@ -811,7 +810,7 @@ with tab5:
             # Debug info (opcional - mostrar solo si hay problemas)
             if st.checkbox("🔍 Mostrar información de debug"):
                 st.markdown(f"""
-                <div class="calculation-debug">
+                <div style="background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-family: monospace; font-size: 0.9em;">
                     <strong>Debug - Cálculos de Presupuesto:</strong><br>
                     • Salario mensual: ${planner.income:,.0f} COP<br>
                     • Presupuesto total deseos (30%): ${budgets['wants_budget']:,.0f} COP<br>
@@ -880,7 +879,7 @@ with tab5:
                 # Debug de cálculos
                 if st.checkbox("🔍 Ver cálculos detallados"):
                     st.markdown(f"""
-                    <div class="calculation-debug">
+                    <div style="background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-family: monospace; font-size: 0.9em;">
                         <strong>Cálculos Paso a Paso:</strong><br>
                         1. Presupuesto total deseos: ${budgets['wants_budget']:,.0f} COP<br>
                         2. Porcentaje para esta compra: {save_percentage}%<br>
@@ -912,12 +911,12 @@ with tab5:
                         st.metric("🎯 Fecha Objetivo", "No alcanzable")
                 
                 # Gráfico de progreso de ahorro
-                if months_needed <= 60 and months_needed != float('inf'):  # Solo mostrar si es razonable
+                if months_needed <= 60 and months_needed != float('inf'):
                     progress_data = []
                     cumulative = 0
                     
                     for month in range(int(months_needed) + 1):
-                        if month > 0:  # No agregar en el mes 0
+                        if month > 0:
                             cumulative += monthly_save
                         progress_data.append({
                             'Mes': month,
@@ -945,14 +944,6 @@ with tab5:
                     )
                     
                     st.plotly_chart(fig_progress, use_container_width=True)
-                    
-                    # Tabla de progreso mensual
-                    with st.expander("📅 Ver progreso mes a mes"):
-                        df_table = df_progress.copy()
-                        df_table['Ahorro Acumulado'] = df_table['Ahorro Acumulado'].apply(lambda x: f"${x:,.0f}")
-                        df_table['Meta'] = df_table['Meta'].apply(lambda x: f"${x:,.0f}")
-                        df_table['Progreso %'] = ((df_progress['Ahorro Acumulado'] / item_price) * 100).round(1)
-                        st.dataframe(df_table, use_container_width=True)
                     
                     # Recomendaciones para la compra
                     if months_needed <= 6:
@@ -998,8 +989,8 @@ with tab5:
                     
                     # Simulación de crédito (ejemplo con 24% anual)
                     if months_needed > 3 and months_needed != float('inf'):
-                        monthly_rate = 0.024  # 24% anual = 2.4% mensual
-                        loan_months = min(months_needed, 36)  # Máximo 36 meses
+                        monthly_rate = 0.024  # 2.4% mensual (24% anual)
+                        loan_months = min(months_needed, 36)
                         
                         # Fórmula correcta para cuota de crédito
                         if monthly_rate > 0:
@@ -1019,7 +1010,6 @@ with tab5:
                             st.write(f"**Total invertido:** ${item_price:,.0f}")
                             st.write(f"**Intereses pagados:** $0")
                             st.write(f"**Tiempo total:** {months_needed} meses")
-                            st.write(f"**Costo de oportunidad:** ${monthly_save * months_needed - item_price:,.0f}")
                         
                         with col_credit2:
                             st.markdown("### 💳 Opción: Financiar (24% anual)")
@@ -1036,32 +1026,6 @@ with tab5:
                         else:
                             needed_reduction = monthly_payment - available_wants
                             st.error(f"⚠️ **Financiamiento no viable:** Necesita reducir ${needed_reduction:,.0f} COP de otros gastos de deseos para pagar la cuota.")
-                    
-                    # Alternativas de ahorro acelerado
-                    st.subheader("🚀 Opciones para Acelerar el Ahorro")
-                    
-                    col_acc1, col_acc2 = st.columns(2)
-                    
-                    with col_acc1:
-                        st.markdown("**🎯 Aumentando el % de ahorro:**")
-                        for new_percentage in [60, 70, 80, 90]:
-                            if new_percentage > save_percentage:
-                                new_monthly_save = budgets['wants_budget'] * (new_percentage / 100)
-                                new_months = math.ceil(item_price / new_monthly_save) if new_monthly_save > 0 else float('inf')
-                                reduction_needed = new_monthly_save - available_wants
-                                
-                                if reduction_needed <= 0:
-                                    st.write(f"• {new_percentage}%: {new_months} meses (${new_monthly_save:,.0f}/mes) ✅")
-                                else:
-                                    st.write(f"• {new_percentage}%: {new_months} meses (${new_monthly_save:,.0f}/mes) ⚠️ Reducir ${reduction_needed:,.0f}")
-                    
-                    with col_acc2:
-                        st.markdown("**💰 Reduciendo el precio objetivo:**")
-                        for price_reduction in [0.9, 0.8, 0.7, 0.6]:
-                            new_price = item_price * price_reduction
-                            new_months = math.ceil(new_price / monthly_save) if monthly_save > 0 else float('inf')
-                            savings = item_price - new_price
-                            st.write(f"• -{int((1-price_reduction)*100)}%: ${new_price:,.0f} → {new_months} meses (ahorra ${savings:,.0f})")
                 
                 elif months_needed == float('inf'):
                     st.markdown(f"""
@@ -1078,66 +1042,6 @@ with tab5:
                     """, unsafe_allow_html=True)
                 else:
                     st.warning(f"⏰ El tiempo necesario ({months_needed} meses) es muy largo. Considere las alternativas sugeridas.")
-            
-            # Simulador de múltiples compras
-            st.subheader("🎯 Simulador de Múltiples Compras")
-            
-            if st.checkbox("Planificar múltiples compras"):
-                st.write("Agregue varias compras para ver cómo distribuir su presupuesto:")
-                
-                # Lista de compras múltiples
-                if 'multiple_purchases' not in st.session_state:
-                    st.session_state.multiple_purchases = []
-                
-                col_multi1, col_multi2, col_multi3 = st.columns(3)
-                
-                with col_multi1:
-                    multi_name = st.text_input("Producto", key="multi_name")
-                
-                with col_multi2:
-                    multi_price = st.number_input("Precio", min_value=0, step=50000, key="multi_price")
-                
-                with col_multi3:
-                    multi_priority = st.selectbox("Prioridad", ["Alta", "Media", "Baja"], key="multi_priority")
-                
-                if st.button("➕ Agregar a la lista") and multi_name and multi_price > 0:
-                    st.session_state.multiple_purchases.append({
-                        'name': multi_name,
-                        'price': multi_price,
-                        'priority': multi_priority
-                    })
-                    st.success(f"✅ {multi_name} agregado a la lista")
-                
-                # Mostrar lista de compras
-                if st.session_state.multiple_purchases:
-                    st.write("**Lista de Compras Planificadas:**")
-                    
-                    total_multiple_cost = sum(item['price'] for item in st.session_state.multiple_purchases)
-                    total_months_if_sequential = math.ceil(total_multiple_cost / monthly_save) if monthly_save > 0 else float('inf')
-                    
-                    for i, item in enumerate(st.session_state.multiple_purchases):
-                        col_item1, col_item2, col_item3, col_item4 = st.columns(4)
-                        
-                        with col_item1:
-                            st.write(f"**{item['name']}**")
-                        
-                        with col_item2:
-                            st.write(f"${item['price']:,.0f}")
-                        
-                        with col_item3:
-                            st.write(f"Prioridad: {item['priority']}")
-                        
-                        with col_item4:
-                            if st.button(f"🗑️", key=f"delete_{i}"):
-                                st.session_state.multiple_purchases.pop(i)
-                                st.rerun()
-                    
-                    st.write(f"**Total de todas las compras:** ${total_multiple_cost:,.0f} COP")
-                    st.write(f"**Tiempo total (secuencial):** {total_months_if_sequential} meses")
-                    
-                    if st.button("🗑️ Limpiar toda la lista"):
-                        st.session_state.multiple_purchases = []
-                        st.rerun()
             
             # Historial de compras planificadas (ejemplo)
             st.subheader("📋 Ejemplo: Compras Planificadas")
