@@ -800,7 +800,7 @@ def main():
         else:
             st.warning("⚠️ Complete la información de ingresos y gastos para ver el análisis completo.")
     
-   with tab5:
+with tab5:
         st.header("📈 Planificador de Compras Importantes")
         
         if planner.income > 0:
