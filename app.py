@@ -93,16 +93,6 @@ st.markdown("""
     .stTab > div > div > div > div {
         padding: 2rem;
     }
-    
-    .calculation-debug {
-        background: #e3f2fd;
-        border: 1px solid #2196f3;
-        border-radius: 8px;
-        padding: 1rem;
-        margin: 1rem 0;
-        font-family: monospace;
-        font-size: 0.9em;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -324,6 +314,7 @@ def main():
                 max_value=5,
                 value=planner.family_info.get('num_pets', 1)
             )
+
 
         # === Cálculo del valor hora de trabajo con mes actual ===
         st.header("Valor de tu hora de trabajo")
@@ -688,4 +679,357 @@ def main():
                 st.metric(
                     "🎯 Deseos",
                     f"{wants_percent:.1f}%",
-                    f"{
+                    f"{delta_wants:+.1f}%",
+                    delta_color="inverse"
+                )
+            
+            with col4:
+                st.metric(
+                    "⚠️ Nivel de Riesgo",
+                    risk_analysis['level'],
+                    help="Basado en el análisis de sus gastos"
+                )
+            
+            # Gráfico de distribución
+            st.subheader("📈 Distribución de Ingresos")
+            
+            # Datos para el gráfico
+            categories = ['Necesidades\n(50%)', 'Deseos\n(30%)', 'Ahorros\n(20%)', 'Sin Asignar']
+            actual_values = [
+                total_needs,
+                total_wants,
+                budgets['savings_budget'],
+                max(0, planner.income - total_needs - total_wants - budgets['savings_budget'])
+            ]
+            
+            budget_values = [
+                budgets['needs_budget'],
+                budgets['wants_budget'],
+                budgets['savings_budget'],
+                0
+            ]
+            
+            # Crear gráfico de barras comparativo
+            fig = make_subplots(
+                rows=2, cols=1,
+                subplot_titles=('Distribución Actual vs Recomendada', 'Análisis por Categorías'),
+                specs=[[{"type": "bar"}], [{"type": "pie"}]],
+                vertical_spacing=0.12
+            )
+            
+            # Gráfico de barras
+            fig.add_trace(
+                go.Bar(name='Actual', x=categories[:-1], y=actual_values[:-1], 
+                       marker_color=['#e17055', '#fdcb6e', '#00b894']),
+                row=1, col=1
+            )
+            
+            fig.add_trace(
+                go.Bar(name='Recomendado', x=categories[:-1], y=budget_values[:-1], 
+                       marker_color=['#ff7675', '#ffeaa7', '#55a3ff'], opacity=0.7),
+                row=1, col=1
+            )
+            
+            # Gráfico circular
+            fig.add_trace(
+                go.Pie(labels=categories, values=actual_values, 
+                       marker_colors=['#e17055', '#fdcb6e', '#00b894', '#ddd']),
+                row=2, col=1
+            )
+            
+            fig.update_layout(
+                height=800,
+                title_text="Análisis Financiero Detallado",
+                showlegend=True
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Recomendaciones personalizadas
+            st.subheader("🎯 Recomendaciones Personalizadas")
+            
+            for i, recommendation in enumerate(risk_analysis['recommendations'], 1):
+                st.write(f"{i}. {recommendation}")
+            
+            # Proyección anual
+            st.subheader("📅 Proyección Anual")
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                annual_needs = total_needs * 12
+                st.metric("Gastos Básicos Anuales", f"${annual_needs:,.0f}")
+            
+            with col2:
+                annual_wants = total_wants * 12
+                st.metric("Gastos de Deseos Anuales", f"${annual_wants:,.0f}")
+            
+            with col3:
+                annual_savings = budgets['savings_budget'] * 12
+                st.metric("Ahorro Anual Recomendado", f"${annual_savings:,.0f}")
+            
+            # Análisis de flujo de caja
+            st.subheader("💸 Flujo de Caja Mensual")
+            
+            remaining_income = planner.income - total_needs - total_wants - budgets['savings_budget']
+            
+            if remaining_income < 0:
+                st.markdown(f"""
+                <div class="danger-card">
+                    <h4>🚨 DÉFICIT FINANCIERO</h4>
+                    <p><strong>Déficit mensual:</strong> ${abs(remaining_income):,.0f} COP</p>
+                    <p><strong>Acción requerida:</strong> Reducir gastos o aumentar ingresos inmediatamente.</p>
+                </div>
+                """, unsafe_allow_html=True)
+            elif remaining_income < planner.income * 0.05:
+                st.markdown(f"""
+                <div class="warning-card">
+                    <h4>⚠️ MARGEN AJUSTADO</h4>
+                    <p><strong>Sobrante mensual:</strong> ${remaining_income:,.0f} COP</p>
+                    <p>Margen muy ajustado, considere optimizar gastos.</p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class="success-card">
+                    <h4>✅ SITUACIÓN FINANCIERA SALUDABLE</h4>
+                    <p><strong>Sobrante mensual:</strong> ${remaining_income:,.0f} COP</p>
+                    <p>Puede considerar aumentar ahorros o inversiones.</p>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.warning("⚠️ Complete la información de ingresos y gastos para ver el análisis completo.")
+    
+    with tab5:
+        st.header("📈 Planificador de Compras Importantes")
+        
+        if planner.income > 0:
+            budgets = planner.calculate_percentages()
+            available_wants = budgets['wants_budget'] - planner.calculate_wants_total()
+            
+            st.info(f"💡 **Presupuesto disponible mensual para compras:** ${max(0, available_wants):,.0f} COP")
+            
+            # Formulario para nueva compra
+            st.subheader("🛍️ Nueva Compra Planificada")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                item_name = st.text_input("¿Qué desea comprar?", placeholder="Ejemplo: iPhone 15, Laptop, Carro")
+                item_price = st.number_input(
+                    "Precio del producto (COP)", 
+                    min_value=0, 
+                    step=100000,
+                    format="%d"
+                )
+            
+            with col2:
+                priority = st.selectbox(
+                    "Prioridad de la compra",
+                    ["Alta", "Media", "Baja"]
+                )
+                
+                save_percentage = st.slider(
+                    "¿Qué % de su presupuesto de deseos destinará a esta compra?",
+                    min_value=10,
+                    max_value=100,
+                    value=50,
+                    step=5
+                ) / 100
+            
+            if item_name and item_price > 0 and available_wants > 0:
+                monthly_save = available_wants * save_percentage
+                months_needed = math.ceil(item_price / monthly_save) if monthly_save > 0 else float('inf')
+                
+                # Información de la compra
+                st.subheader(f"📊 Plan de Ahorro: {item_name}")
+                
+                col_a, col_b, col_c, col_d = st.columns(4)
+                
+                with col_a:
+                    st.metric("💰 Precio Total", f"${item_price:,.0f}")
+                
+                with col_b:
+                    st.metric("💳 Ahorro Mensual", f"${monthly_save:,.0f}")
+                
+                with col_c:
+                    st.metric("📅 Meses Necesarios", f"{months_needed}")
+                
+                with col_d:
+                    target_date = datetime.now() + timedelta(days=30 * months_needed)
+                    st.metric("🎯 Fecha Objetivo", target_date.strftime("%m/%Y"))
+                
+                # Gráfico de progreso de ahorro
+                if months_needed <= 60:  # Solo mostrar si es razonable
+                    progress_data = []
+                    cumulative = 0
+                    
+                    for month in range(int(months_needed) + 1):
+                        cumulative += monthly_save if month < months_needed else 0
+                        progress_data.append({
+                            'Mes': month,
+                            'Ahorro Acumulado': min(cumulative, item_price),
+                            'Meta': item_price
+                        })
+                    
+                    df_progress = pd.DataFrame(progress_data)
+                    
+                    fig_progress = px.line(
+                        df_progress, 
+                        x='Mes', 
+                        y=['Ahorro Acumulado', 'Meta'],
+                        title=f"Progreso de Ahorro para {item_name}",
+                        color_discrete_map={
+                            'Ahorro Acumulado': '#00b894',
+                            'Meta': '#e17055'
+                        }
+                    )
+                    
+                    fig_progress.update_layout(
+                        xaxis_title="Meses",
+                        yaxis_title="Monto (COP)",
+                        height=400
+                    )
+                    
+                    st.plotly_chart(fig_progress, use_container_width=True)
+                    
+                    # Recomendaciones para la compra
+                    if months_needed <= 6:
+                        st.markdown(f"""
+                        <div class="success-card">
+                            <h4>🎉 Compra Alcanzable</h4>
+                            <p>Podrá comprar <strong>{item_name}</strong> en {months_needed} meses.</p>
+                            <p><strong>Estrategia:</strong> Mantenga disciplina en el ahorro mensual.</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    elif months_needed <= 12:
+                        st.markdown(f"""
+                        <div class="warning-card">
+                            <h4>⏰ Compra a Mediano Plazo</h4>
+                            <p>Necesitará {months_needed} meses para comprar <strong>{item_name}</strong>.</p>
+                            <p><strong>Sugerencias:</strong></p>
+                            <ul>
+                                <li>Considere aumentar el % destinado al ahorro</li>
+                                <li>Busque ofertas o descuentos</li>
+                                <li>Evalúe comprar una versión más económica</li>
+                            </ul>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"""
+                        <div class="danger-card">
+                            <h4>🚨 Compra a Muy Largo Plazo</h4>
+                            <p>Necesitará {months_needed} meses para esta compra.</p>
+                            <p><strong>Recomendaciones:</strong></p>
+                            <ul>
+                                <li>Reconsidere si realmente necesita esta compra</li>
+                                <li>Aumente significativamente sus ingresos</li>
+                                <li>Reduzca otros gastos de deseos</li>
+                                <li>Busque alternativas más económicas</li>
+                            </ul>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    # Comparación con financiamiento
+                    st.subheader("💳 Comparación: Ahorro vs Financiamiento")
+                    
+                    # Simulación de crédito (ejemplo con 24% anual)
+                    if months_needed > 3:
+                        monthly_rate = 0.24 / 12  # 24% anual
+                        loan_months = min(months_needed, 36)  # Máximo 36 meses
+                        
+                        if monthly_rate > 0:
+                            monthly_payment = (item_price * monthly_rate * (1 + monthly_rate)**loan_months) / ((1 + monthly_rate)**loan_months - 1)
+                            total_interest = (monthly_payment * loan_months) - item_price
+                        else:
+                            monthly_payment = item_price / loan_months
+                            total_interest = 0
+                        
+                        col_credit1, col_credit2 = st.columns(2)
+                        
+                        with col_credit1:
+                            st.markdown("### 💰 Ahorrando")
+                            st.write(f"**Cuota mensual:** ${monthly_save:,.0f}")
+                            st.write(f"**Total pagado:** ${item_price:,.0f}")
+                            st.write(f"**Intereses:** $0")
+                            st.write(f"**Tiempo:** {months_needed} meses")
+                        
+                        with col_credit2:
+                            st.markdown("### 💳 Financiando (24% anual)")
+                            st.write(f"**Cuota mensual:** ${monthly_payment:,.0f}")
+                            st.write(f"**Total pagado:** ${monthly_payment * loan_months:,.0f}")
+                            st.write(f"**Intereses:** ${total_interest:,.0f}")
+                            st.write(f"**Tiempo:** {loan_months} meses")
+                        
+                        if monthly_payment <= available_wants:
+                            savings_vs_credit = total_interest
+                            st.success(f"💡 **Ahorrando en lugar de financiar, evitará pagar ${savings_vs_credit:,.0f} en intereses.**")
+                        else:
+                            st.error(f"⚠️ **La cuota del crédito (${monthly_payment:,.0f}) excede su presupuesto disponible.**")
+                
+                else:
+                    st.warning(f"⏰ El tiempo necesario ({months_needed} meses) es muy largo. Considere reducir el precio objetivo o aumentar el ahorro mensual.")
+            
+            elif available_wants <= 0:
+                st.error("❌ No tiene presupuesto disponible para nuevas compras. Primero optimice sus gastos actuales de deseos.")
+            
+            # Historial de compras planificadas (simulado)
+            st.subheader("📋 Mis Compras Planificadas")
+            
+            # Esto sería idealmente guardado en una base de datos
+            sample_purchases = [
+                {"Producto": "Laptop Gaming", "Precio": 3500000, "Ahorro Mensual": 350000, "Meses Restantes": 7, "Progreso": 30},
+                {"Producto": "Viaje a Europa", "Precio": 8000000, "Ahorro Mensual": 400000, "Meses Restantes": 15, "Progreso": 25},
+                {"Producto": "iPhone 15", "Precio": 4500000, "Ahorro Mensual": 450000, "Meses Restantes": 2, "Progreso": 80}
+            ]
+            
+            if st.checkbox("Ver ejemplo de compras planificadas"):
+                df_purchases = pd.DataFrame(sample_purchases)
+                
+                for idx, purchase in df_purchases.iterrows():
+                    with st.expander(f"🛍️ {purchase['Producto']} - {purchase['Progreso']}% completado"):
+                        col_p1, col_p2, col_p3 = st.columns(3)
+                        
+                        with col_p1:
+                            st.metric("Precio", f"${purchase['Precio']:,.0f}")
+                        
+                        with col_p2:
+                            st.metric("Ahorro Mensual", f"${purchase['Ahorro Mensual']:,.0f}")
+                        
+                        with col_p3:
+                            st.metric("Meses Restantes", purchase['Meses Restantes'])
+                        
+                        # Barra de progreso
+                        progress_bar = st.progress(purchase['Progreso'] / 100)
+                        st.write(f"Progreso: {purchase['Progreso']}%")
+        else:
+            st.warning("⚠️ Complete la información de ingresos para usar el planificador de compras.")
+    
+    # Footer con información adicional
+    st.markdown("---")
+    st.markdown("""
+    <div style="text-align: center; color: #666; padding: 2rem;">
+        <h3>💡 Sobre el Modelo 50-30-20</h3>
+        <p>Este modelo de presupuesto fue popularizado por Elizabeth Warren y sugiere:</p>
+        <div style="display: flex; justify-content: space-around; margin: 1rem 0;">
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 0.5rem;">
+                <strong>50% Necesidades</strong><br>
+                Gastos esenciales para vivir
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 0.5rem;">
+                <strong>30% Deseos</strong><br>
+                Entretenimiento y gustos
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 0.5rem;">
+                <strong>20% Ahorro</strong><br>
+                Fondo de emergencia e inversiones
+            </div>
+        </div>
+        <p style="font-size: 0.9em; color: #999;">
+            Desarrollado con ❤️ para ayudarte a alcanzar tus metas financieras
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
