@@ -857,13 +857,15 @@ def main():
             if item_name and item_price > 0:
                 # Calcular el ahorro mensual basado en el presupuesto total de deseos (no solo lo disponible)
                 save_percentage_decimal = save_percentage / 100
-                monthly_save = budgets['wants_budget'] * save_percentage_decimal
-                
-                # Calcular meses necesarios
-                if monthly_save > 0:
-                    months_needed = math.ceil(item_price / monthly_save)
-                else:
-                    months_needed = float('inf')
+                max_monthly_save = budgets['wants_budget'] * save_percentage_decimal
+
+            if max_monthly_save > 0:
+                months_needed = math.ceil(item_price / max_monthly_save)
+                # Cuota mensual exacta para completar en esos meses exactos
+                monthly_save = item_price / months_needed
+            else:
+                months_needed = float('inf')
+                monthly_save = 0
                 
                 # Validar si el ahorro mensual es factible
                 if monthly_save > budgets['wants_budget']:
